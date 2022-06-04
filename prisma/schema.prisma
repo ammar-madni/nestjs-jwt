@@ -11,17 +11,17 @@ datasource db {
 }
 
 model User {
-  id                   Int                @id @default(autoincrement())
-  name                 String             @db.VarChar(255)
-  email                String             @unique @db.VarChar(255)
-  password             String             @db.VarChar(255)
-  prefersImperialUnits Boolean            @default(false)
-  emailVerifiedAt      DateTime           @db.Timestamp
-  createdAt            DateTime           @db.Timestamp
-  updatedAt            DateTime           @db.Timestamp
-  exercises            Exercise[]
-  workouts             Workout[]
-  completedWorkouts    CompletedWorkout[]
+  id                 Int                @id @default(autoincrement())
+  name               String             @db.VarChar(255)
+  email              String             @unique @db.VarChar(255)
+  password           String             @db.VarChar(255)
+  prefersMetricUnits Boolean            @default(true)
+  emailVerifiedAt    DateTime?          @db.Timestamp
+  createdAt          DateTime           @default(now()) @db.Timestamp
+  updatedAt          DateTime           @updatedAt
+  exercises          Exercise[]
+  workouts           Workout[]
+  completedWorkouts  CompletedWorkout[]
 
   @@map("users")
 }
@@ -30,8 +30,8 @@ model Exercise {
   id           Int            @id @default(autoincrement())
   name         String         @db.VarChar(255)
   description  String?        @db.VarChar(255)
-  createdAt    DateTime       @db.Timestamp
-  updatedAt    DateTime       @db.Timestamp
+  createdAt    DateTime       @default(now()) @db.Timestamp
+  updatedAt    DateTime       @updatedAt
   userId       Int
   user         User           @relation(fields: [userId], references: [id])
   sets         Set[]
@@ -44,8 +44,8 @@ model Workout {
   id                Int                @id @default(autoincrement())
   name              String             @db.VarChar(255)
   description       String?            @db.VarChar(255)
-  createdAt         DateTime           @db.Timestamp
-  updatedAt         DateTime           @db.Timestamp
+  createdAt         DateTime           @default(now()) @db.Timestamp
+  updatedAt         DateTime           @updatedAt
   userId            Int
   user              User               @relation(fields: [userId], references: [id])
   sets              Set[]
@@ -58,8 +58,8 @@ model Set {
   id         Int      @id @default(autoincrement())
   reps       Int      @db.Integer
   weight     Int      @db.Integer
-  createdAt  DateTime @db.Timestamp
-  updatedAt  DateTime @db.Timestamp
+  createdAt  DateTime @default(now()) @db.Timestamp
+  updatedAt  DateTime @updatedAt
   exerciseId Int
   exercise   Exercise @relation(fields: [exerciseId], references: [id])
   workoutId  Int
@@ -72,8 +72,8 @@ model CompletedSet {
   id                 Int              @id @default(autoincrement())
   reps               Int              @db.Integer
   weight             Int              @db.Integer
-  createdAt          DateTime         @db.Timestamp
-  updatedAt          DateTime         @db.Timestamp
+  createdAt          DateTime         @default(now()) @db.Timestamp
+  updatedAt          DateTime         @updatedAt
   exerciseId         Int
   exercise           Exercise         @relation(fields: [exerciseId], references: [id])
   completedWorkoutId Int
@@ -84,8 +84,8 @@ model CompletedSet {
 
 model CompletedWorkout {
   id            Int            @id @default(autoincrement())
-  createdAt     DateTime       @db.Timestamp
-  updatedAt     DateTime       @db.Timestamp
+  createdAt     DateTime       @default(now()) @db.Timestamp
+  updatedAt     DateTime       @updatedAt
   userId        Int
   user          User           @relation(fields: [userId], references: [id])
   workoutId     Int

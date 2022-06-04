@@ -4,10 +4,10 @@ CREATE TABLE "users" (
     "name" VARCHAR(255) NOT NULL,
     "email" VARCHAR(255) NOT NULL,
     "password" VARCHAR(255) NOT NULL,
-    "prefersImperialUnits" BOOLEAN NOT NULL DEFAULT false,
-    "emailVerifiedAt" TIMESTAMP NOT NULL,
-    "createdAt" TIMESTAMP NOT NULL,
-    "updatedAt" TIMESTAMP NOT NULL,
+    "prefersMetricUnits" BOOLEAN NOT NULL DEFAULT true,
+    "emailVerifiedAt" TIMESTAMP,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "users_pkey" PRIMARY KEY ("id")
 );
@@ -17,8 +17,8 @@ CREATE TABLE "exercises" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(255) NOT NULL,
     "description" VARCHAR(255),
-    "createdAt" TIMESTAMP NOT NULL,
-    "updatedAt" TIMESTAMP NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     "userId" INTEGER NOT NULL,
 
     CONSTRAINT "exercises_pkey" PRIMARY KEY ("id")
@@ -29,8 +29,8 @@ CREATE TABLE "workouts" (
     "id" SERIAL NOT NULL,
     "name" VARCHAR(255) NOT NULL,
     "description" VARCHAR(255),
-    "createdAt" TIMESTAMP NOT NULL,
-    "updatedAt" TIMESTAMP NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     "userId" INTEGER NOT NULL,
 
     CONSTRAINT "workouts_pkey" PRIMARY KEY ("id")
@@ -41,8 +41,8 @@ CREATE TABLE "sets" (
     "id" SERIAL NOT NULL,
     "reps" INTEGER NOT NULL,
     "weight" INTEGER NOT NULL,
-    "createdAt" TIMESTAMP NOT NULL,
-    "updatedAt" TIMESTAMP NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     "exerciseId" INTEGER NOT NULL,
     "workoutId" INTEGER NOT NULL,
 
@@ -54,8 +54,8 @@ CREATE TABLE "completed_sets" (
     "id" SERIAL NOT NULL,
     "reps" INTEGER NOT NULL,
     "weight" INTEGER NOT NULL,
-    "createdAt" TIMESTAMP NOT NULL,
-    "updatedAt" TIMESTAMP NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     "exerciseId" INTEGER NOT NULL,
     "completedWorkoutId" INTEGER NOT NULL,
 
@@ -65,8 +65,8 @@ CREATE TABLE "completed_sets" (
 -- CreateTable
 CREATE TABLE "completed_workouts" (
     "id" SERIAL NOT NULL,
-    "createdAt" TIMESTAMP NOT NULL,
-    "updatedAt" TIMESTAMP NOT NULL,
+    "createdAt" TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     "userId" INTEGER NOT NULL,
     "workoutId" INTEGER NOT NULL,
 
