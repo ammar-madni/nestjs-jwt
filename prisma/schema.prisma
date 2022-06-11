@@ -16,6 +16,7 @@ model User {
   email              String             @unique @db.VarChar(255)
   password           String             @db.VarChar(255)
   prefersMetricUnits Boolean            @default(true)
+  refreshToken       String?            @db.VarChar(255)
   emailVerifiedAt    DateTime?          @db.Timestamp
   createdAt          DateTime           @default(now()) @db.Timestamp
   updatedAt          DateTime           @updatedAt
