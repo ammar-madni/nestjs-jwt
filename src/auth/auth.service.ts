@@ -28,7 +28,7 @@ export class AuthService {
         },
       });
 
-      return await this.#getTokens(user.id, user.email);
+      return await this.#getTokens(user.id, user.name, user.email);
     } catch (e) {
       if (e instanceof PrismaClientKnownRequestError) {
         if (e.code === 'P2002') {
@@ -45,7 +45,6 @@ export class AuthService {
         email: dto.email,
       },
     });
-
     if (!user) {
       throw new ForbiddenException('Invalid credentials');
     }
@@ -55,18 +54,58 @@ export class AuthService {
       throw new ForbiddenException('Invalid credentials');
     }
 
-    return await this.#getTokens(user.id, user.email);
+    return await this.#getTokens(user.id, user.name, user.email);
+  }
+
+  async logout(userId: number) {
+    await this.prisma.user.updateMany({
+      where: {
+        id: userId,
+        refreshToken: {
+          not: null,
+        },
+      },
+      data: {
+        refreshToken: null,
+      },
+    });
+  }
+
+  async refreshTokens(userId: number, refreshToken: string): Promise<Tokens> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+    if (!user) {
+      throw new ForbiddenException('Invalid credentials');
+    }
+
+    const refreshTokenMatches = await argon.verify(
+      refreshToken,
+      user.refreshToken,
+    );
+    if (!refreshTokenMatches) {
+      throw new ForbiddenException('Invalid credentials');
+    }
+
+    return await this.#getTokens(user.id, user.name, user.email);
   }
 
   async #hashData(data: any) {
     return await argon.hash(data);
   }
 
-  async #getTokens(userId: number, email: string): Promise<Tokens> {
+  async #getTokens(
+    userId: number,
+    name: string,
+    email: string,
+  ): Promise<Tokens> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         {
           sub: userId,
+          name,
           email,
         },
         {
@@ -77,6 +116,7 @@ export class AuthService {
       this.jwtService.signAsync(
         {
           sub: userId,
+          name,
           email,
         },
         {
