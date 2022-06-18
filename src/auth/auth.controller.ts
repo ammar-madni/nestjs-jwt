@@ -9,7 +9,7 @@ import {
 import { GetCurrentUser, Public } from 'src/common/decorators';
 import { RefreshTokenGuard } from 'src/common/guards';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto } from './dto';
+import { AuthDto, NewUserDto } from './dto';
 import { Tokens } from './types';
 
 @Controller('auth')
@@ -19,15 +19,15 @@ export class AuthController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  register(@Body() dto: RegisterDto): Promise<Tokens> {
-    return this.authService.register(dto);
+  register(@Body() newUser: NewUserDto): Promise<Tokens> {
+    return this.authService.register(newUser);
   }
 
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  login(@Body() dto: LoginDto): Promise<Tokens> {
-    return this.authService.login(dto);
+  login(@Body() userCredentials: AuthDto): Promise<Tokens> {
+    return this.authService.login(userCredentials);
   }
 
   @Post('logout')

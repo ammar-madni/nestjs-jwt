@@ -1,7 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { RegisterDto } from './dto';
-import { LoginDto } from './dto';
+import { NewUserDto, AuthDto } from './dto';
 import * as argon from 'argon2';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { Tokens } from './types';
@@ -16,14 +15,14 @@ export class AuthService {
     private config: ConfigService,
   ) {}
 
-  async register(dto: RegisterDto): Promise<Tokens> {
-    const hash = await this.#hashData(dto.password);
+  async register(newUser: NewUserDto): Promise<Tokens> {
+    const hash = await this.#hashData(newUser.password);
 
     try {
       const user = await this.prisma.user.create({
         data: {
-          name: dto.name,
-          email: dto.email,
+          name: newUser.name,
+          email: newUser.email,
           password: hash,
         },
       });
@@ -39,17 +38,20 @@ export class AuthService {
     }
   }
 
-  async login(dto: LoginDto): Promise<Tokens> {
+  async login(userCredentials: AuthDto): Promise<Tokens> {
     const user = await this.prisma.user.findUnique({
       where: {
-        email: dto.email,
+        email: userCredentials.email,
       },
     });
     if (!user) {
       throw new ForbiddenException('Invalid credentials');
     }
 
-    const passwordMatches = await argon.verify(user.password, dto.password);
+    const passwordMatches = await argon.verify(
+      user.password,
+      userCredentials.password,
+    );
     if (!passwordMatches) {
       throw new ForbiddenException('Invalid credentials');
     }
