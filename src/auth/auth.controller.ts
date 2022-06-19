@@ -8,8 +8,9 @@ import {
 } from '@nestjs/common';
 import { GetCurrentUser, Public } from 'src/common/decorators';
 import { RefreshTokenGuard } from 'src/common/guards';
+import { CreateUserDto } from 'src/users/dto';
 import { AuthService } from './auth.service';
-import { AuthDto, NewUserDto } from './dto';
+import { AuthDto } from './dto';
 import { Tokens } from './types';
 
 @Controller('auth')
@@ -19,7 +20,7 @@ export class AuthController {
   @Public()
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  register(@Body() newUser: NewUserDto): Promise<Tokens> {
+  register(@Body() newUser: CreateUserDto): Promise<Tokens> {
     return this.authService.register(newUser);
   }
 
@@ -36,10 +37,11 @@ export class AuthController {
     return this.authService.logout(userId);
   }
 
+  @Public()
   @UseGuards(RefreshTokenGuard)
-  @Post('refesh-tokens')
+  @Post('refresh-tokens')
   @HttpCode(HttpStatus.OK)
-  refresh(
+  refreshTokens(
     @GetCurrentUser() userId: number,
     @GetCurrentUser('refreshToken') refreshToken: string,
   ): Promise<Tokens> {

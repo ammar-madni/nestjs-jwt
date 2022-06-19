@@ -1,48 +1,28 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { NewUserDto, AuthDto } from './dto';
+import { AuthDto } from './dto';
 import * as argon from 'argon2';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import { Tokens } from './types';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { CreateUserDto } from 'src/users/dto';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
+    private usersService: UsersService,
     private jwtService: JwtService,
     private config: ConfigService,
   ) {}
 
-  async register(newUser: NewUserDto): Promise<Tokens> {
-    const hash = await this.#hashData(newUser.password);
-
-    try {
-      const user = await this.prisma.user.create({
-        data: {
-          name: newUser.name,
-          email: newUser.email,
-          password: hash,
-        },
-      });
-
-      return await this.#getTokens(user.id, user.name, user.email);
-    } catch (e) {
-      if (e instanceof PrismaClientKnownRequestError) {
-        if (e.code === 'P2002') {
-          throw new ForbiddenException('Email already in use');
-        }
-      }
-      throw e;
-    }
+  async register(newUser: CreateUserDto): Promise<Tokens> {
+    const user = await this.usersService.create(newUser);
+    return await this.#getTokens(user.id, user.name, user.email);
   }
 
   async login(userCredentials: AuthDto): Promise<Tokens> {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        email: userCredentials.email,
-      },
+    const user = await this.usersService.find({
+      email: userCredentials.email,
     });
     if (!user) {
       throw new ForbiddenException('Invalid credentials');
@@ -60,42 +40,24 @@ export class AuthService {
   }
 
   async logout(userId: number) {
-    await this.prisma.user.updateMany({
-      where: {
-        id: userId,
-        refreshToken: {
-          not: null,
-        },
-      },
-      data: {
-        refreshToken: null,
-      },
-    });
+    await this.usersService.updateRefreshToken(userId, null);
   }
 
   async refreshTokens(userId: number, refreshToken: string): Promise<Tokens> {
-    const user = await this.prisma.user.findUnique({
-      where: {
-        id: userId,
-      },
-    });
+    const user = await this.usersService.find({ id: userId });
     if (!user) {
       throw new ForbiddenException('Invalid credentials');
     }
 
     const refreshTokenMatches = await argon.verify(
-      refreshToken,
       user.refreshToken,
+      refreshToken,
     );
     if (!refreshTokenMatches) {
       throw new ForbiddenException('Invalid credentials');
     }
 
     return await this.#getTokens(user.id, user.name, user.email);
-  }
-
-  async #hashData(data: any) {
-    return await argon.hash(data);
   }
 
   async #getTokens(
@@ -128,23 +90,11 @@ export class AuthService {
       ),
     ]);
 
-    await this.#updateRefreshToken(userId, refreshToken);
+    await this.usersService.updateRefreshToken(userId, refreshToken);
 
     return {
       accessToken,
       refreshToken,
     };
-  }
-
-  async #updateRefreshToken(userId: number, refreshToken: string) {
-    const hashedRefreshToken = await this.#hashData(refreshToken);
-    await this.prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        refreshToken: hashedRefreshToken,
-      },
-    });
   }
 }
