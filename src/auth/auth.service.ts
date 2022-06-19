@@ -24,17 +24,13 @@ export class AuthService {
     const user = await this.usersService.find({
       email: userCredentials.email,
     });
-    if (!user) {
-      throw new ForbiddenException('Invalid credentials');
-    }
+    if (!user) throw new ForbiddenException('Invalid credentials');
 
     const passwordMatches = await argon.verify(
       user.password,
       userCredentials.password,
     );
-    if (!passwordMatches) {
-      throw new ForbiddenException('Invalid credentials');
-    }
+    if (!passwordMatches) throw new ForbiddenException('Invalid credentials');
 
     return await this.#getTokens(user.id, user.name, user.email);
   }
@@ -45,17 +41,15 @@ export class AuthService {
 
   async refreshTokens(userId: number, refreshToken: string): Promise<Tokens> {
     const user = await this.usersService.find({ id: userId });
-    if (!user) {
+    if (!user || !user.refreshToken)
       throw new ForbiddenException('Invalid credentials');
-    }
 
     const refreshTokenMatches = await argon.verify(
       user.refreshToken,
       refreshToken,
     );
-    if (!refreshTokenMatches) {
+    if (!refreshTokenMatches)
       throw new ForbiddenException('Invalid credentials');
-    }
 
     return await this.#getTokens(user.id, user.name, user.email);
   }
