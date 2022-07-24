@@ -7,7 +7,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { GetCurrentUser, Public } from 'src/common/decorators';
-import { RefreshTokenGuard } from 'src/common/guards';
+import { RefreshTokenGuard } from 'src/auth/guards';
 import { CreateUserDto } from 'src/users/dto';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto';
