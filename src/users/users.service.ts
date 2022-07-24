@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Injectable, UnprocessableEntityException } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 import * as argon from 'argon2';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -19,7 +19,7 @@ export class UsersService {
     } catch (e) {
       if (e instanceof PrismaClientKnownRequestError) {
         if (e.code === 'P2002') {
-          throw new ForbiddenException('Email already in use');
+          throw new UnprocessableEntityException('Email already in use');
         }
       }
       throw e;
@@ -39,16 +39,6 @@ export class UsersService {
       where: { id },
       data: {
         ...user,
-      },
-    });
-  }
-
-  async updateRefreshToken(id: number, refreshToken: string | null) {
-    await this.prisma.user.update({
-      where: { id },
-      data: {
-        refreshToken:
-          refreshToken === null ? refreshToken : await argon.hash(refreshToken),
       },
     });
   }

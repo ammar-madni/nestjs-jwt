@@ -16,15 +16,28 @@ model User {
   email              String             @unique @db.VarChar(255)
   password           String             @db.VarChar(255)
   prefersMetricUnits Boolean            @default(true)
-  refreshToken       String?            @db.VarChar(255)
   emailVerifiedAt    DateTime?          @db.Timestamp
   createdAt          DateTime           @default(now()) @db.Timestamp
   updatedAt          DateTime           @updatedAt
+  refreshTokens      RefreshToken[]
   exercises          Exercise[]
   workouts           Workout[]
   completedWorkouts  CompletedWorkout[]
 
   @@map("users")
+}
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String?  @db.VarChar(255) @unique
+  isUsed    Boolean  @default(false) // Not sure if this is necessary? Can just delete the token if it has been re-used?
+  isRevoked Boolean  @default(false) // Not sure if this is necessary? Can just delete the token to revoke it?
+  createdAt DateTime @default(now()) @db.Timestamp
+  updatedAt DateTime @updatedAt
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("refresh_tokens")
 }
 
 model Exercise {

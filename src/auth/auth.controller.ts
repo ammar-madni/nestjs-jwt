@@ -33,8 +33,8 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  logout(@GetCurrentUser() userId: number) {
-    return this.authService.logout(userId);
+  logout(@GetCurrentUser('refreshToken') refreshToken: string) {
+    return this.authService.logout(refreshToken);
   }
 
   @Public()
