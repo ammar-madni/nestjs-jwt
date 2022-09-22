@@ -6,6 +6,7 @@ import { PrismaClient } from '@prisma/client';
 export class PrismaService extends PrismaClient {
   constructor(config: ConfigService) {
     super({
+      // log: ['query'],
       datasources: {
         db: {
           url: config.get('DATABASE_URL'),

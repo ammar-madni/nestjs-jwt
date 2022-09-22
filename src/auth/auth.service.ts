@@ -7,6 +7,8 @@ import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from 'src/users/dto';
 import { UsersService } from 'src/users/users.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { User } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 
 @Injectable()
 export class AuthService {
@@ -23,30 +25,35 @@ export class AuthService {
   }
 
   async login(userCredentials: AuthDto): Promise<Tokens> {
-    const user = await this.usersService.find({
-      email: userCredentials.email,
-    });
-    if (!user) throw new UnauthorizedException('Invalid credentials');
-
-    const passwordMatches = await argon.verify(
-      user.password,
+    const user = await this.validateUser(
+      userCredentials.email,
       userCredentials.password,
     );
-    if (!passwordMatches)
-      throw new UnauthorizedException('Invalid credentials');
 
     const tokens = await this.#generateTokens(user.id, user.name, user.email);
-
-    await this.prisma.refreshToken.create({
-      data: { userId: user.id, token: tokens.refreshToken },
-    });
 
     return tokens;
   }
 
-  async logout(refreshToken: string) {
-    await this.prisma.refreshToken.delete({
-      where: { token: refreshToken },
+  async logout(userId: number, refreshToken: string) {
+    await this.prisma.refreshToken
+      .delete({
+        where: { token: refreshToken },
+      })
+      .catch(async (error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2025') {
+            await this.#handleReuseDetected(userId);
+          }
+        }
+      });
+  }
+
+  async logoutAll(userId: number) {
+    await this.prisma.refreshToken.deleteMany({
+      where: {
+        userId,
+      },
     });
   }
 
@@ -54,37 +61,44 @@ export class AuthService {
     const oldRefreshToken = await this.prisma.refreshToken.findFirst({
       where: {
         userId,
-        token: await argon.hash(refreshToken),
+        token: refreshToken,
       },
       include: {
         user: true,
       },
     });
     if (!oldRefreshToken) {
-      await this.prisma.refreshToken.deleteMany({ where: { userId } });
-      throw new UnauthorizedException('Invalid Credentials');
+      await this.#handleReuseDetected(userId);
     }
 
     const tokens = await this.#generateTokens(
       oldRefreshToken.userId,
       oldRefreshToken.user.name,
       oldRefreshToken.user.email,
+      oldRefreshToken.token,
     );
 
-    await this.prisma.refreshToken.update({
-      where: oldRefreshToken,
-      data: {
-        token: await argon.hash(tokens.refreshToken),
-      },
-    });
-
     return tokens;
+  }
+
+  async validateUser(email: string, password: string): Promise<User> {
+    const user = await this.usersService.find({
+      email,
+    });
+    if (!user) throw new UnauthorizedException('Invalid credentials');
+
+    const passwordMatches = await argon.verify(user.password, password);
+    if (!passwordMatches)
+      throw new UnauthorizedException('Invalid credentials');
+
+    return user;
   }
 
   async #generateTokens(
     userId: number,
     name: string,
     email: string,
+    oldRefreshToken?: string,
   ): Promise<Tokens> {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
@@ -111,9 +125,29 @@ export class AuthService {
       ),
     ]);
 
+    if (oldRefreshToken) {
+      await this.prisma.refreshToken.update({
+        where: {
+          token: oldRefreshToken,
+        },
+        data: {
+          token: refreshToken,
+        },
+      });
+    } else {
+      await this.prisma.refreshToken.create({
+        data: { userId, token: refreshToken },
+      });
+    }
+
     return {
       accessToken,
       refreshToken,
     };
+  }
+
+  async #handleReuseDetected(userId: number) {
+    await this.logoutAll(userId);
+    throw new UnauthorizedException('Invalid Credentials');
   }
 }

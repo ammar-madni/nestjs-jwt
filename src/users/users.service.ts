@@ -9,21 +9,21 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(newUser: CreateUserDto) {
-    try {
-      return await this.prisma.user.create({
+    return await this.prisma.user
+      .create({
         data: {
           ...newUser,
           password: await argon.hash(newUser.password),
         },
-      });
-    } catch (e) {
-      if (e instanceof PrismaClientKnownRequestError) {
-        if (e.code === 'P2002') {
-          throw new UnprocessableEntityException('Email already in use');
+      })
+      .catch((error) => {
+        if (error instanceof PrismaClientKnownRequestError) {
+          if (error.code === 'P2002') {
+            throw new UnprocessableEntityException('Email already in use');
+          }
         }
-      }
-      throw e;
-    }
+        throw error;
+      });
   }
 
   async findAll(filter: any) {
