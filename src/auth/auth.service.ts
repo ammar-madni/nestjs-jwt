@@ -100,29 +100,22 @@ export class AuthService {
     email: string,
     oldRefreshToken?: string,
   ): Promise<Tokens> {
+    const tokenPayload = {
+      sub: userId,
+      name,
+      email,
+    };
+    const accessTokenOptions = {
+      secret: this.config.get('JWT_ACCESS_TOKEN_SECRET'),
+      expiresIn: this.config.get('JWT_ACCESS_TOKEN_EXPIRATION'),
+    };
+    const refreshTokenOptions = {
+      secret: this.config.get('JWT_REFRESH_TOKEN_SECRET'),
+      expiresIn: this.config.get('JWT_REFRESH_TOKEN_EXPIRATION'),
+    };
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        {
-          sub: userId,
-          name,
-          email,
-        },
-        {
-          secret: this.config.get('JWT_ACCESS_TOKEN_SECRET'),
-          expiresIn: this.config.get('JWT_ACCESS_TOKEN_EXPIRATION'),
-        },
-      ),
-      this.jwtService.signAsync(
-        {
-          sub: userId,
-          name,
-          email,
-        },
-        {
-          secret: this.config.get('JWT_REFRESH_TOKEN_SECRET'),
-          expiresIn: this.config.get('JWT_REFRESH_TOKEN_EXPIRATION'),
-        },
-      ),
+      this.jwtService.signAsync(tokenPayload, accessTokenOptions),
+      this.jwtService.signAsync(tokenPayload, refreshTokenOptions),
     ]);
 
     if (oldRefreshToken) {
